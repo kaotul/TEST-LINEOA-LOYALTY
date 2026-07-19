@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติคะแนน</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, "Segoe UI", "Sarabun", sans-serif; margin:0; background:#f4f6f8; }
+        .wrap { max-width: 420px; margin: 0 auto; padding: 16px; }
+        h2 { color:#1a5c3a; }
+        .item { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+        .item .left .type { font-weight:600; font-size:14px; }
+        .item .left .sub { font-size:12px; color:#888; margin-top:2px; }
+        .item .right { text-align:right; }
+        .earn { color:#0f6c33; }
+        .redeem { color:#a15c00; }
+        .expire { color:#b3261e; }
+        .back { display:inline-block; margin-bottom: 10px; color:#1a5c3a; text-decoration:none; font-size:14px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back" href="{% url 'customers:liff_index' %}">← กลับ</a>
+    <h2>ประวัติคะแนน</h2>
+    <div id="list"></div>
+</div>
+
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+async function init() {
+    await liff.init({ liffId: "{{ liff_id }}" });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const idToken = liff.getIDToken();
+    await fetch("{% url 'customers:liff_login' %}", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ id_token: idToken }),
+    });
+
+    const res = await fetch("{% url 'loyalty:my_history' %}");
+    const data = await res.json();
+    const list = document.getElementById('list');
+    if (!data.ok || data.transactions.length === 0) {
+        list.innerHTML = '<p style="color:#888;">ยังไม่มีประวัติ</p>';
+        return;
+    }
+    list.innerHTML = data.transactions.map(tx => `
+        <div class="item">
+            <div class="left">
+                <div class="type ${tx.type}">${tx.type_display}</div>
+                <div class="sub">${new Date(tx.created_at).toLocaleString('th-TH')}${tx.expire_date ? ' · หมดอายุ ' + tx.expire_date : ''}</div>
+            </div>
+            <div class="right">
+                <div class="${tx.type}" style="font-weight:700;">${tx.points > 0 ? '+' : ''}${tx.points}</div>
+                <div class="sub">คงเหลือ ${tx.balance_after}</div>
+            </div>
+        </div>
+    `).join('');
+}
+init();
+</script>
+</body>
+</html>

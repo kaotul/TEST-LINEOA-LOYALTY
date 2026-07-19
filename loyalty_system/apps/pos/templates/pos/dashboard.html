@@ -1,0 +1,37 @@
+{% extends "base/pos_base.html" %}
+{% block title %}แดชบอร์ด - Loyalty POS{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>ภาพรวมระบบสะสมแต้ม</h3>
+    <p>อัตราแลกแต้ม: ทุก <strong>{{ setting.baht_per_point }}</strong> บาท = 1 คะแนน</p>
+    <p>แต้มหมดอายุใน <strong>{{ setting.point_expiry_days }}</strong> วัน</p>
+</div>
+
+<div class="card">
+    <a class="btn" href="{% url 'pos:scan' %}">📷 สแกน QR ลูกค้าเพื่อให้/แลกแต้ม</a>
+</div>
+
+<div class="card">
+    <h3>รายการล่าสุด</h3>
+    <table>
+        <thead>
+            <tr><th>วันที่</th><th>ลูกค้า</th><th>ประเภท</th><th>แต้ม</th><th>คงเหลือ</th><th>สาขา</th><th>พนักงาน</th></tr>
+        </thead>
+        <tbody>
+        {% for tx in recent_transactions %}
+            <tr>
+                <td>{{ tx.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ tx.customer.display_name|default:tx.customer.member_code }}</td>
+                <td><span class="badge badge-{{ tx.tx_type }}">{{ tx.get_tx_type_display }}</span></td>
+                <td>{{ tx.points }}</td>
+                <td>{{ tx.balance_after }}</td>
+                <td>{{ tx.store.name|default:"-" }}</td>
+                <td>{{ tx.staff.username|default:"-" }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="7">ยังไม่มีรายการ</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

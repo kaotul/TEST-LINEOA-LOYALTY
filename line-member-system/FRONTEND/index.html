@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Member Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Loading state while liff.init() and the status check run -->
+  <div id="screen-loading" class="screen">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-label">Connecting to LINE&hellip;</p>
+  </div>
+
+  <!-- Error state: LIFF failed to init, or an API call failed -->
+  <div id="screen-error" class="screen hidden">
+    <p class="eyebrow">Something went wrong</p>
+    <h1 id="error-title">Couldn't load your profile</h1>
+    <p id="error-message" class="muted"></p>
+    <button type="button" class="btn btn-primary" id="btn-retry">Try again</button>
+  </div>
+
+  <!-- Registration form -->
+  <div id="screen-form" class="screen hidden">
+    <header class="profile-strip">
+      <img id="profile-picture" src="" alt="" class="avatar" />
+      <div>
+        <p class="eyebrow">Signed in as</p>
+        <p id="profile-name" class="profile-name"></p>
+      </div>
+    </header>
+
+    <h1 class="title">Join the club</h1>
+    <p class="muted intro">A few details and your member card is ready.</p>
+
+    <form id="registration-form" novalidate>
+      <div class="field-row">
+        <div class="field">
+          <label for="first_name">First name</label>
+          <input id="first_name" name="first_name" type="text" autocomplete="given-name" required />
+          <span class="field-error" data-error-for="first_name"></span>
+        </div>
+        <div class="field">
+          <label for="last_name">Last name</label>
+          <input id="last_name" name="last_name" type="text" autocomplete="family-name" required />
+          <span class="field-error" data-error-for="last_name"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="phone_number">Phone number</label>
+        <input id="phone_number" name="phone_number" type="tel" inputmode="numeric" placeholder="0812345678"
+               autocomplete="tel" pattern="0\d{8,9}" required />
+        <span class="field-error" data-error-for="phone_number"></span>
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required />
+        <span class="field-error" data-error-for="email"></span>
+      </div>
+
+      <div class="field">
+        <label for="date_of_birth">Date of birth</label>
+        <input id="date_of_birth" name="date_of_birth" type="date" required />
+        <span class="field-error" data-error-for="date_of_birth"></span>
+      </div>
+
+      <p id="form-error" class="form-error hidden" role="alert"></p>
+
+      <button type="submit" class="btn btn-primary" id="btn-submit">
+        <span class="btn-label">Create my card</span>
+        <span class="btn-spinner hidden" aria-hidden="true"></span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Success / member card -->
+  <div id="screen-card" class="screen hidden">
+    <p class="eyebrow eyebrow-center">You're in</p>
+    <h1 class="title title-center" id="card-welcome">Welcome</h1>
+
+    <div class="card" id="member-card">
+      <div class="card-foil" aria-hidden="true"></div>
+      <img id="card-picture" class="card-avatar" src="" alt="" />
+      <p class="card-label">MEMBER CARD</p>
+      <p class="card-name" id="card-name"></p>
+      <p class="card-number" id="card-number"></p>
+      <div class="card-divider"></div>
+      <div class="card-meta">
+        <div>
+          <span class="card-meta-label">Joined</span>
+          <span class="card-meta-value" id="card-joined"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="muted card-footnote">We also sent this card to your chat with us.</p>
+    <button type="button" class="btn btn-secondary" id="btn-close">Close</button>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

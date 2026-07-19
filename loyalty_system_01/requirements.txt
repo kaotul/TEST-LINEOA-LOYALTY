@@ -1,0 +1,13 @@
+Django==6.0.*         # ต้องใช้ Python 3.12+ (Django 6.0 dropped support Python 3.10/3.11)
+djangorestframework==3.15.*
+psycopg[binary]==3.2.*
+django-environ==0.11.*
+celery==5.4.*
+redis==5.0.*
+django-celery-beat==2.7.*
+qrcode[pil]==7.4.*
+Pillow==10.4.*
+line-bot-sdk==3.14.*
+requests==2.32.*
+gunicorn==22.0.*
+whitenoise==6.7.*

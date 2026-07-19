@@ -1,0 +1,110 @@
+{% extends "base/pos_base.html" %}
+{% block title %}สแกน QR ลูกค้า - Loyalty POS{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>📷 สแกน QR Code ของลูกค้า</h3>
+    <div id="reader" style="width: 100%; max-width: 400px;"></div>
+    <p style="font-size:13px;color:#666;">หรือกรอกรหัสสมาชิกด้วยตนเอง:</p>
+    <div style="display:flex; gap:8px;">
+        <input id="manual-code" placeholder="รหัสสมาชิก (member code)">
+        <button class="btn" onclick="lookupManual()">ค้นหา</button>
+    </div>
+</div>
+
+<div class="card" id="customer-card" style="display:none;">
+    <h3 id="c-name"></h3>
+    <p>แต้มคงเหลือ: <strong id="c-balance"></strong> คะแนน</p>
+
+    <h4>➕ ให้แต้มจากยอดซื้อ</h4>
+    <label>ยอดซื้อ (บาท)</label>
+    <input id="purchase-amount" type="number" step="0.01" min="0">
+    <button class="btn" style="margin-top:10px;" onclick="doAward()">บันทึกยอดซื้อ &amp; ให้แต้ม</button>
+
+    <h4 style="margin-top:24px;">➖ แลกแต้ม</h4>
+    <label>จำนวนแต้มที่ต้องการแลก</label>
+    <input id="redeem-points" type="number" step="1" min="1">
+    <button class="btn" style="margin-top:10px; background:#a15c00;" onclick="doRedeem()">ยืนยันแลกแต้ม</button>
+
+    <p id="result-msg" style="margin-top:12px;"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+const CSRF = "{{ csrf_token }}";
+let currentCustomerId = null;
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+
+async function lookupPayload(payload) {
+    const res = await fetch("{% url 'pos:lookup_customer' %}", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCookie('csrftoken')},
+        body: "payload=" + encodeURIComponent(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error); return; }
+    currentCustomerId = data.customer_id;
+    document.getElementById('customer-card').style.display = 'block';
+    document.getElementById('c-name').innerText = data.display_name || ('สมาชิก #' + data.customer_id);
+    document.getElementById('c-balance').innerText = data.balance;
+}
+
+function lookupManual() {
+    const code = document.getElementById('manual-code').value.trim();
+    if (code) lookupPayload(code);
+}
+
+async function doAward() {
+    const amount = document.getElementById('purchase-amount').value;
+    const res = await fetch("{% url 'pos:award_points' %}", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCookie('csrftoken')},
+        body: `customer_id=${currentCustomerId}&purchase_amount=${amount}`,
+    });
+    const data = await res.json();
+    const msg = document.getElementById('result-msg');
+    if (data.ok) {
+        msg.style.color = '#0f6c33';
+        msg.innerText = `ให้แต้มสำเร็จ +${data.points_awarded} คะแนน (คงเหลือ ${data.new_balance}) หมดอายุ ${data.expire_date}`;
+        document.getElementById('c-balance').innerText = data.new_balance;
+    } else {
+        msg.style.color = '#b3261e';
+        msg.innerText = data.error;
+    }
+}
+
+async function doRedeem() {
+    const points = document.getElementById('redeem-points').value;
+    const res = await fetch("{% url 'pos:redeem_points' %}", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCookie('csrftoken')},
+        body: `customer_id=${currentCustomerId}&points=${points}`,
+    });
+    const data = await res.json();
+    const msg = document.getElementById('result-msg');
+    if (data.ok) {
+        msg.style.color = '#0f6c33';
+        msg.innerText = `แลกแต้มสำเร็จ คงเหลือ ${data.new_balance} คะแนน`;
+        document.getElementById('c-balance').innerText = data.new_balance;
+    } else {
+        msg.style.color = '#b3261e';
+        msg.innerText = data.error;
+    }
+}
+
+const html5QrCode = new Html5Qrcode("reader");
+Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+        html5QrCode.start(
+            cameras[0].id,
+            { fps: 10, qrbox: 220 },
+            (decodedText) => { lookupPayload(decodedText); },
+            () => {}
+        );
+    }
+}).catch(() => { console.log("ไม่พบกล้อง - ใช้การกรอกรหัสด้วยตนเองแทน"); });
+</script>
+{% endblock %}

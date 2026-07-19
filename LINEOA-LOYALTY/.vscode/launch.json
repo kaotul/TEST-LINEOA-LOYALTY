@@ -1,0 +1,91 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+                    {
+                "name": "Python: Django runserver",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}\\BACKEND\\manage.py",
+                "args": [
+                    "runserver",
+                    "0.0.0.0:8000" // Or your desired host:port
+                ],
+                "django": true,
+                "justMyCode": true,
+                //"console": "integratedTerminal",
+                "cwd": "${workspaceFolder}"
+            },
+        {
+            "name": "Python: DEVELOPMENT",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\BACKEND\\manage.py",
+            "args": [
+                "runserver",
+                "--noreload",
+                //"--insecure",
+                //--settings=CORE.settings.development",
+                "127.0.0.1:8000",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "env": {
+                "DJANGO_SECRET_KEY": "django-insecure-vgoa@&+@9&5iu0#*28wytjusxr)-+avvl5r9+ao10qjg-o2k(5",
+                "DJANGO_ALLOWED_HOSTS": ".s-sofin.com,127.0.0.1,localhost,.ngrok-free.app",
+                "DJANGO_DEBUG": "True",
+                "LIFF_CHANNEL_ID": "2006758697",
+                "LINE_CHANNEL_ACCESS_TOKEN": "YdynLWn4iwZk4hpszw48w072eaWM32bNRVPhSHNPw617WUT3pjCC4KvXQDxYWgOjpKQb5MktQg++7UXa4MdpioQy+AmGKua5tDobts9NdQ36GH1d7vE9RGl0Wvvq3gCJ+yruxNUwk/D+D+toJx0V9AdB04t89/1O/w1cDnyilFU=",
+                "LINE_CHANNEL_SECRET": "9f51faaeb6ea2a55f3e9fda3584ad06a",
+                "LIFF_ID" : "2006758697-hcr8FNvy",
+                "LIFF_BASE_URL": "https://liff.line.me",
+                "APP_ENV": "development",
+                "REVISION": "2025-03-13-VER-01",
+                "BRANCH_NAME": "DEV", 
+                "BUILD_NUMBER": "1",
+                "DRF_API_LOGGER_DATABASE": "1",
+                "EMAIL_HOST": "192.168.7.1",
+                "EMAIL_USE_TLS": "false",
+                "EMAIL_USE_SSL": "false",
+                "EMAIL_PORT": "25",
+                "EMAIL_HOST_USER": "",
+                "EMAIL_HOST_PASSWORD": "",
+                "DEFAULT_FROM_EMAIL": "FRIEND-GET-FRIEND <no-reply@tgh.co.th>"
+            }
+        },
+        {
+            "name": "Python: POC+MOC",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\POC\\manage.py",
+            "args": [
+                "runserver",
+                "--noreload",
+                //"--insecure",
+                "--settings=CORE.settings.poc",
+                "127.0.0.1:8000",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "env": {
+                "DJANGO_SECRET_KEY": "django-insecure-vgoa@&+@9&5iu0#*28wytjusxr)-+avvl5r9+ao10qjg-o2k(5",
+                "DJANGO_ALLOWED_HOSTS": ".s-sofin.com,127.0.0.1,localhost,.ngrok-free.app",
+                "DJANGO_DEBUG": "True",                
+                "APP_ENV": "sit",
+                "REVISION": "2025-03-13-VER-01",
+                "DEBUG": "true",
+                "DRF_API_LOGGER_DATABASE": "1",                
+                "BRANCH_NAME": "DEV",
+                "BUILD_NUMBER": "1",
+                "MOCK_LINE": "false",
+                "MOCK_INTERNAL_API": "true",
+                "MOCK_OCR": "true",
+                "LINE_CHANNEL_SECRET": "3994b95aec1e74293555acf444747bcd",
+                "LINE_CHANNEL_ACCESS_TOKEN": "HxcLKezloXIkDbdPxrbSZ0pvPRiz+prx8AC98O6BzaD9ZW7D0maxdI5x1Dk0pBebqDI0/tmxwvis0ifYVslN+Yvb1y/RpFjbUAJai2GqlSWTysDdkYu9/1ABBsUW32c3UCGQMs5z9yflbj6HwO0HkQdB04t89/1O/w1cDnyilFU="
+            }
+        }
+    ]
+}

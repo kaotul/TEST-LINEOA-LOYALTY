@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คะแนนสะสมของฉัน</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; background: #f7f7f8; color: #222; }
+    .balance-card { background: linear-gradient(135deg,#06C755,#1DB446); color: #fff; border-radius: 16px; padding: 24px; text-align: center; }
+    .balance-card .points { font-size: 42px; font-weight: bold; }
+    .qr-card, .expiry-card, .history-card, .register-card { background: #fff; border-radius: 12px; padding: 16px; margin-top: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .qr-card img { width: 180px; height: 180px; display: block; margin: 8px auto; }
+    h3 { margin: 0 0 8px; font-size: 15px; color: #555; }
+    .history-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+    .history-item.earn { color: #0a7a34; }
+    .history-item.redeem, .history-item.expire { color: #b3261e; }
+    .muted { color: #888; font-size: 12px; }
+    .warn { background: #fff4e5; color: #9a5b00; border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 13px; }
+    .loading { text-align: center; padding: 40px 0; color: #888; }
+    input[type=text], input[type=tel] { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; margin-top: 6px; }
+    label { font-size: 14px; font-weight: 500; }
+    .consent-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; }
+    button { width: 100%; padding: 12px; font-size: 16px; border: none; border-radius: 8px; background: #06C755; color: #fff; margin-top: 14px; }
+    button:disabled { background: #ccc; }
+    .error { color: #b3261e; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">กำลังตรวจสอบสมาชิก...</div>
+
+  <!-- ขั้นตอนสมัครสมาชิก / login ผ่าน LINE OA (กติกาข้อ 1) -->
+  <div id="register-view" class="register-card" style="display:none">
+    <h3>สมัครสมาชิกสะสมคะแนน</h3>
+    <p class="muted">ยืนยันตัวตนด้วยบัญชี LINE เรียบร้อยแล้ว กรอกข้อมูลเพิ่มเติมเพื่อเริ่มสะสมคะแนน</p>
+    <label>ชื่อที่แสดง</label>
+    <input type="text" id="reg-name" placeholder="ชื่อ-นามสกุล">
+    <label>เบอร์โทรศัพท์</label>
+    <input type="tel" id="reg-phone" placeholder="08xxxxxxxx">
+    <div class="consent-row">
+      <input type="checkbox" id="reg-consent">
+      <label for="reg-consent">ฉันยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว</label>
+    </div>
+    <button id="reg-submit">สมัครสมาชิก</button>
+    <div class="error" id="reg-error"></div>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="balance-card">
+      <div>คะแนนสะสมของ <span id="display-name"></span></div>
+      <div class="points" id="total-points">0</div>
+      <div>คะแนน</div>
+    </div>
+
+    <div id="expiry-warning"></div>
+
+    <div class="qr-card">
+      <h3>QR Code ประจำตัว — ยื่นให้พนักงานสแกน</h3>
+      <img id="qr-image" alt="QR Code ของฉัน">
+    </div>
+
+    <div class="history-card">
+      <h3>ประวัติการรับ-แลกคะแนน</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const KIND_LABEL = { EARN: 'รับคะแนน', REDEEM: 'แลกคะแนน', EXPIRE: 'คะแนนหมดอายุ', ADJUST: 'ปรับปรุงคะแนน' };
+    let idToken = null;
+
+    async function main() {
+      await liff.init({ liffId: '{{ liff_id }}' });
+      if (!liff.isLoggedIn()) {
+        liff.login();   // LINE Login ผ่าน LIFF (กติกาข้อ 1)
+        return;
+      }
+      idToken = liff.getIDToken();
+      await loadSummary();
+    }
+
+    async function loadSummary() {
+      const res = await fetch(`/customers/api/liff/me/?id_token=${encodeURIComponent(idToken)}`);
+      document.getElementById('loading').style.display = 'none';
+
+      if (res.status === 428) {
+        // ยังไม่ลงทะเบียนสมาชิก -> แสดงฟอร์มสมัคร
+        document.getElementById('register-view').style.display = 'block';
+        return;
+      }
+      if (!res.ok) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('loading').textContent = 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+        return;
+      }
+      const data = await res.json();
+      render(data);
+    }
+
+    document.getElementById('reg-submit').addEventListener('click', async () => {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const consent = document.getElementById('reg-consent').checked;
+      const errorEl = document.getElementById('reg-error');
+      errorEl.textContent = '';
+
+      if (!phone || !consent) {
+        errorEl.textContent = 'กรุณากรอกเบอร์โทรศัพท์และยอมรับเงื่อนไขก่อนสมัครสมาชิก';
+        return;
+      }
+      const btn = document.getElementById('reg-submit');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/customers/api/liff/register/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken, display_name: name, phone_number: phone, consent_accepted: consent }),
+        });
+        const data = await res.json();
+        if (data.registered) {
+          document.getElementById('register-view').style.display = 'none';
+          await loadSummary();
+        } else {
+          errorEl.textContent = data.detail || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่';
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function render(data) {
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('display-name').textContent = data.display_name || '';
+      document.getElementById('total-points').textContent = data.total_points;
+      document.getElementById('qr-image').src = `/customers/qr/${data.qr_token}.png`;
+
+      if (data.expiring_soon_points > 0) {
+        const d = new Date(data.nearest_expiry);
+        document.getElementById('expiry-warning').innerHTML =
+          `<div class="warn">⏰ มี ${data.expiring_soon_points} คะแนน กำลังจะหมดอายุวันที่ ${d.toLocaleDateString('th-TH')}</div>`;
+      }
+
+      const list = document.getElementById('history-list');
+      list.innerHTML = data.history.map(h => {
+        const cls = h.kind === 'EARN' ? 'earn' : (h.kind === 'REDEEM' || h.kind === 'EXPIRE' ? 'redeem' : '');
+        const sign = h.points > 0 ? '+' : '';
+        const dt = new Date(h.created_at).toLocaleDateString('th-TH');
+        return `<div class="history-item ${cls}">
+                  <span>${KIND_LABEL[h.kind] || h.kind}<br><span class="muted">${dt}</span></span>
+                  <span>${sign}${h.points}</span>
+                </div>`;
+      }).join('') || '<div class="muted">ยังไม่มีประวัติ</div>';
+    }
+
+    main();
+  </script>
+</body>
+</html>

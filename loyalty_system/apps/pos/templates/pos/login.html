@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - Loyalty POS</title>
+    <style>
+        body { font-family: -apple-system, "Segoe UI", "Sarabun", sans-serif; background: #f4f6f8; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+        .box { background:#fff; padding: 32px; border-radius: 12px; width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        input { width:100%; padding:10px; margin: 6px 0 14px; border:1px solid #d1d5db; border-radius:8px; box-sizing:border-box; }
+        button { width:100%; padding:10px; background:#1a5c3a; color:#fff; border:none; border-radius:8px; font-size:15px; cursor:pointer; }
+        .msg-error { color:#b3261e; font-size: 13px; }
+        h2 { text-align:center; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>🏪 Loyalty POS</h2>
+    {% for message in messages %}<div class="msg-error">{{ message }}</div>{% endfor %}
+    <form method="post">
+        {% csrf_token %}
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" name="username" required autofocus>
+        <label>รหัสผ่าน</label>
+        <input type="password" name="password" required>
+        <button type="submit">เข้าสู่ระบบ</button>
+    </form>
+</div>
+</body>
+</html>

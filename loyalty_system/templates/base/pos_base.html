@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Loyalty POS{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, "Segoe UI", "Sarabun", sans-serif; margin: 0; background: #f4f6f8; color: #1f2933; }
+        header { background: #1a5c3a; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+        header a { color: #fff; text-decoration: none; margin-right: 16px; font-size: 14px; }
+        main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+        .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; }
+        .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+        .badge-earn { background: #d1f5da; color: #0f6c33; }
+        .badge-redeem { background: #ffe6c7; color: #a15c00; }
+        .badge-expire { background: #fde0e0; color: #b3261e; }
+        .btn { background: #1a5c3a; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn:hover { background: #144a2f; }
+        input, select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; font-size: 14px; }
+        label { font-size: 13px; color: #555; display:block; margin: 8px 0 4px; }
+        .msg-error { color: #b3261e; margin: 8px 0; }
+        .msg-success { color: #0f6c33; margin: 8px 0; }
+    </style>
+</head>
+<body>
+<header>
+    <div><strong>🏪 Loyalty POS</strong></div>
+    <nav>
+        {% if user.is_authenticated %}
+            <a href="{% url 'pos:dashboard' %}">แดชบอร์ด</a>
+            <a href="{% url 'pos:scan' %}">สแกน/ให้แต้ม</a>
+            {% if user.is_manager_role %}<a href="{% url 'pos:reports' %}">รายงาน</a>{% endif %}
+            {% if user.can_manage_settings %}<a href="{% url 'pos:settings' %}">ตั้งค่า</a>{% endif %}
+            <a href="{% url 'pos:logout' %}">ออกจากระบบ ({{ user.username }} · {{ user.get_role_display }})</a>
+        {% endif %}
+    </nav>
+</header>
+<main>
+    {% for message in messages %}
+        <div class="msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

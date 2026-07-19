@@ -1,0 +1,20 @@
+{% extends "base/pos_base.html" %}
+{% block title %}ตั้งค่าระบบ - Loyalty POS{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>⚙️ ตั้งค่าระบบสะสมแต้ม</h3>
+    <form method="post">
+        {% csrf_token %}
+        <label>ทุกยอดซื้อกี่บาท ได้ 1 คะแนน</label>
+        <input type="number" step="0.01" name="baht_per_point" value="{{ setting.baht_per_point }}">
+
+        <label>แต้มหมดอายุภายในกี่วัน</label>
+        <input type="number" name="point_expiry_days" value="{{ setting.point_expiry_days }}">
+
+        <label>แจ้งเตือนล่วงหน้ากี่วันก่อนหมดอายุ</label>
+        <input type="number" name="expiry_warning_days" value="{{ setting.expiry_warning_days }}">
+
+        <button class="btn" style="margin-top:16px;" type="submit">บันทึกการตั้งค่า</button>
+    </form>
+</div>
+{% endblock %}

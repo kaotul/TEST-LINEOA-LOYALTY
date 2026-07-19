@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คะแนนของฉัน</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, "Segoe UI", "Sarabun", sans-serif; margin:0; background: linear-gradient(180deg,#1a5c3a,#f4f6f8 240px); min-height:100vh; }
+        .wrap { max-width: 420px; margin: 0 auto; padding: 20px; }
+        .profile { display:flex; align-items:center; gap:12px; color:#fff; padding: 10px 0 20px; }
+        .profile img { width:48px; height:48px; border-radius:50%; }
+        .points-card { background:#fff; border-radius:16px; padding:24px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+        .points-card .num { font-size: 42px; font-weight:700; color:#1a5c3a; }
+        .warn { background:#fff3cd; color:#8a6100; padding:10px 14px; border-radius:10px; margin-top:14px; font-size:13px; }
+        .actions { display:flex; gap:10px; margin-top:18px; }
+        .actions a { flex:1; text-align:center; background:#1a5c3a; color:#fff; padding:12px; border-radius:10px; text-decoration:none; font-size:14px; }
+        .actions a.secondary { background:#fff; color:#1a5c3a; border:1px solid #1a5c3a; }
+        #qr-box { text-align:center; margin-top:16px; display:none; }
+        #qr-box img { width:200px; height:200px; }
+        .loading { text-align:center; color:#fff; padding: 40px 0; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div id="loading" class="loading">กำลังโหลด...</div>
+    <div id="content" style="display:none;">
+        <div class="profile">
+            <img id="p-picture" src="" alt="">
+            <div>
+                <div id="p-name" style="font-weight:600;"></div>
+                <div style="font-size:12px;opacity:0.85;">สมาชิกสะสมแต้ม</div>
+            </div>
+        </div>
+
+        <div class="points-card">
+            <div style="color:#888;font-size:13px;">คะแนนสะสมของคุณ</div>
+            <div class="num" id="balance">0</div>
+            <div style="color:#888;font-size:13px;">คะแนน</div>
+            <div id="expiry-warn" class="warn" style="display:none;"></div>
+        </div>
+
+        <div class="actions">
+            <a href="#" onclick="showQr(); return false;">แสดง QR รับแต้ม</a>
+            <a class="secondary" href="{% url 'customers:liff_history' %}">ประวัติ</a>
+        </div>
+
+        <div id="qr-box">
+            <img id="qr-img" src="" alt="QR Code">
+            <p style="font-size:12px;color:#666;">ให้พนักงานสแกน QR นี้เพื่อรับ/แลกแต้ม</p>
+        </div>
+    </div>
+</div>
+
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+async function init() {
+    await liff.init({ liffId: "{{ liff_id }}" });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+
+    const idToken = liff.getIDToken();
+    await fetch("{% url 'customers:liff_login' %}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ id_token: idToken }),
+    });
+
+    const res = await fetch("{% url 'loyalty:my_summary' %}");
+    const data = await res.json();
+    if (!data.ok) { document.getElementById('loading').innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่"; return; }
+
+    document.getElementById('p-name').innerText = data.display_name || 'สมาชิก';
+    document.getElementById('p-picture').src = data.picture_url || '';
+    document.getElementById('balance').innerText = data.balance.toLocaleString();
+
+    if (data.expiring_soon_points > 0) {
+        const el = document.getElementById('expiry-warn');
+        el.style.display = 'block';
+        el.innerText = `⚠️ มี ${data.expiring_soon_points.toLocaleString()} คะแนน จะหมดอายุภายใน ${data.expiring_soon_days} วัน (${data.nearest_expiry_date})`;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+}
+
+async function showQr() {
+    const box = document.getElementById('qr-box');
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    const res = await fetch("{% url 'customers:liff_qrcode' %}");
+    const data = await res.json();
+    if (data.ok) {
+        document.getElementById('qr-img').src = 'data:image/png;base64,' + data.qr_base64;
+        box.style.display = 'block';
+    }
+}
+
+init();
+</script>
+</body>
+</html>

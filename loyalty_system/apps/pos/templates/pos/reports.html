@@ -1,0 +1,28 @@
+{% extends "base/pos_base.html" %}
+{% block title %}รายงาน - Loyalty POS{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>📊 รายงานรายการแต้มทั้งหมด (200 รายการล่าสุด)</h3>
+    <table>
+        <thead>
+            <tr><th>วันที่</th><th>ลูกค้า</th><th>ประเภท</th><th>ยอดซื้อ</th><th>แต้ม</th><th>คงเหลือ</th><th>สาขา</th><th>พนักงาน</th></tr>
+        </thead>
+        <tbody>
+        {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ tx.customer.display_name|default:tx.customer.member_code }}</td>
+                <td><span class="badge badge-{{ tx.tx_type }}">{{ tx.get_tx_type_display }}</span></td>
+                <td>{{ tx.purchase_amount|default:"-" }}</td>
+                <td>{{ tx.points }}</td>
+                <td>{{ tx.balance_after }}</td>
+                <td>{{ tx.store.name|default:"-" }}</td>
+                <td>{{ tx.staff.username|default:"-" }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8">ยังไม่มีรายการ</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS - ให้คะแนนสะสม</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; background: #f7f7f8; }
+    h1 { font-size: 18px; }
+    #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .customer-name { font-weight: bold; font-size: 16px; }
+    .points-badge { color: #1DB446; font-weight: bold; }
+    input[type=number] { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; font-size: 16px; border: none; border-radius: 8px; background: #06C755; color: #fff; margin-top: 8px; }
+    button:disabled { background: #ccc; }
+    .hint { color: #666; font-size: 13px; }
+    .result { padding: 12px; border-radius: 8px; margin-top: 10px; }
+    .result.ok { background: #e6f9ee; color: #0a7a34; }
+    .result.err { background: #fdecec; color: #b3261e; }
+  </style>
+</head>
+<body>
+  <h1>POS: ให้คะแนนสะสม — {{ staff_name }}</h1>
+
+  <div id="reader"></div>
+  <p class="hint">ให้ลูกค้าเปิดหน้า QR ของตัวเองจากเมนู LINE OA แล้วส่องกล้องไปที่ QR</p>
+
+  <div class="card" id="customer-card" style="display:none">
+    <div class="customer-name" id="customer-name"></div>
+    <div>คะแนนปัจจุบัน: <span class="points-badge" id="customer-points"></span></div>
+    <hr>
+    <label>ยอดซื้อ (บาท)</label>
+    <input type="number" id="purchase-amount" placeholder="เช่น 350" min="0" step="1">
+    <div class="hint" id="preview-points"></div>
+    <button id="award-btn">กดให้คะแนน</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const BAHT_PER_POINT = {{ baht_per_point|default:50 }};
+    let currentCustomerId = null;
+
+    function getCookie(name) {
+      const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+      return m ? m.pop() : '';
+    }
+
+    async function lookupCustomer(token) {
+      const res = await fetch(`/pos/api/lookup/?token=${encodeURIComponent(token)}`, { credentials: 'same-origin' });
+      if (!res.ok) { alert('ไม่พบข้อมูลลูกค้า / QR ไม่ถูกต้อง'); return; }
+      const data = await res.json();
+      currentCustomerId = data.customer_id;
+      document.getElementById('customer-card').style.display = 'block';
+      document.getElementById('customer-name').textContent = data.display_name || '(ไม่ระบุชื่อ)';
+      document.getElementById('customer-points').textContent = data.current_points + ' คะแนน';
+      document.getElementById('result').innerHTML = '';
+    }
+
+    document.getElementById('purchase-amount').addEventListener('input', (e) => {
+      const amt = parseFloat(e.target.value || '0');
+      const pts = Math.floor(amt / BAHT_PER_POINT);
+      document.getElementById('preview-points').textContent = `จะได้รับประมาณ ${pts} คะแนน (ทุก ${BAHT_PER_POINT} บาท = 1 คะแนน)`;
+    });
+
+    document.getElementById('award-btn').addEventListener('click', async () => {
+      const amount = document.getElementById('purchase-amount').value;
+      if (!currentCustomerId || !amount) return;
+      const btn = document.getElementById('award-btn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/pos/api/award/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          credentials: 'same-origin',
+          body: JSON.stringify({ customer_id: currentCustomerId, purchase_amount: amount }),
+        });
+        const data = await res.json();
+        const resultEl = document.getElementById('result');
+        if (res.ok) {
+          resultEl.className = 'result ok';
+          resultEl.textContent = `ให้คะแนนสำเร็จ +${data.points_earned} คะแนน (ยอดรวมใหม่ ${data.new_balance})`;
+          document.getElementById('customer-points').textContent = data.new_balance + ' คะแนน';
+          document.getElementById('purchase-amount').value = '';
+        } else {
+          resultEl.className = 'result err';
+          resultEl.textContent = data.detail || 'เกิดข้อผิดพลาด';
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    const scanner = new Html5Qrcode('reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => { lookupCustomer(decodedText); },
+      () => {}
+    );
+  </script>
+</body>
+</html>
