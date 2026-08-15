@@ -9,7 +9,7 @@
                 "name": "Python: Django runserver",
                 "type": "python",
                 "request": "launch",
-                "program": "${workspaceFolder}\\BACKEND\\manage.py",
+                "program": "${workspaceFolder}\\LINEOA-LOYALTY\\BACKEND\\manage.py",
                 "args": [
                     "runserver",
                     "0.0.0.0:8000" // Or your desired host:port
@@ -17,11 +17,23 @@
                 "django": true,
                 "justMyCode": true,
                 //"console": "integratedTerminal",
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "DJANGO_SECRET_KEY": "django-insecure-vgoa@&+@9&5iu0#*28wytjusxr)-+avvl5r9+ao10qjg-o2k(5",
+                    "DJANGO_ALLOWED_HOSTS": ".s-sofin.com,127.0.0",
+                    "DJANGO_DEBUG": "True", 
+                    "LINE_CHANNEL_ACCESS_TOKEN": "YdynLWn4iwZk4hpszw48w072eaWM32bNRVPhSHNPw617WUT3pjCC4KvXQDxYWgOjpKQb5MktQg++7UXa4MdpioQy+AmGKua5tDobts9NdQ36GH1d7vE9RGl0Wvvq3gCJ+yruxNUwk/D+D+toJx0V9AdB04t89/1O/w1cDnyilFU=",
+                    "LINE_CHANNEL_SECRET": "ceb7b383b97e67c82b8217ffe03afa26",
+                    "LIFF_ID": "2011121121-3FQHhh5D",
+                    "LIFF_CHANNEL_ID": "2011121121",
+                    "LIFF_CHANNEL_SECRET": "be6db86111d91a61a21a419def0b7c65",
+                    "ALLOWED_HOSTS": ".s-sofin.com,127.0.0.1,localhost,.ngrok-free.app",
+                    "CSRF_TRUSTED_ORIGINS": "https://*.s-sofin.com,https://*.ngrok-free.app"
+                }
             },
-        {
-            "name": "Python: DEVELOPMENT",
-            "type": "python",
+            {
+                "name": "Python: DEVELOPMENT",
+                "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\BACKEND\\manage.py",
             "args": [

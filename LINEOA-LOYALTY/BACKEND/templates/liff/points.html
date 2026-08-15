@@ -70,8 +70,12 @@
     let idToken = null;
 
     async function main() {
+      console.log("LINE LIFF initializing...liffId: {{ liff_id }}");
       await liff.init({ liffId: '{{ liff_id }}' });
+      //await liff.init({ liffId: '2011121121-3FQHhh5D' });
+
       if (!liff.isLoggedIn()) {
+        console.log("LINE Login required, redirecting to login...");
         liff.login();   // LINE Login ผ่าน LIFF (กติกาข้อ 1)
         return;
       }
@@ -80,11 +84,14 @@
     }
 
     async function loadSummary() {
+      //const res = await fetch(`https://5f54-27-130-40-133.ngrok-free.app/customers/api/liff/me/?id_token=${encodeURIComponent(idToken)}`);
       const res = await fetch(`/customers/api/liff/me/?id_token=${encodeURIComponent(idToken)}`);
-      document.getElementById('loading').style.display = 'none';
 
-      if (res.status === 428) {
+      document.getElementById('loading').style.display = 'none';
+        console.log("Fetching customer summary, status:", res.status);
+      if (res.status === 404 || res.status === 428) {
         // ยังไม่ลงทะเบียนสมาชิก -> แสดงฟอร์มสมัคร
+        console.log("Customer not registered, showing registration form...");
         document.getElementById('register-view').style.display = 'block';
         return;
       }

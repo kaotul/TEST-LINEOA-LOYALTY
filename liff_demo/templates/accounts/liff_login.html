@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login with LINE</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#f5f7fa;margin:0;}
+  .card{background:#fff;padding:32px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.08);text-align:center;width:300px;}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:#06C755;color:#fff;border:none;
+       padding:12px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px;}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .msg{font-size:13px;color:#666;margin-top:12px;min-height:18px;}
+  .error{color:#d9464b;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Sign in</h2>
+    <p style="color:#666;font-size:14px;">Sign in with your LINE account to continue.</p>
+    <button id="loginBtn" class="btn">💬 Login with LINE</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+<script>
+const LIFF_ID = "{{ liff_id }}";
+const msgEl = document.getElementById('msg');
+const btn = document.getElementById('loginBtn');
+
+function setMsg(text, isError) {
+  msgEl.textContent = text;
+  msgEl.className = 'msg' + (isError ? ' error' : '');
+}
+
+async function verifyOnServer(idToken) {
+  const res = await fetch("{% url 'accounts:liff_verify' %}", {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id_token: idToken}),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'verify_failed');
+  }
+  return data;
+}
+
+async function completeLogin() {
+  setMsg('Signing you in…');
+  btn.disabled = true;
+  try {
+    const idToken = liff.getIDToken();          // JWT proving who the user is
+    if (!idToken) throw new Error('no_id_token'); // LIFF app must have "openid" scope enabled
+    const data = await verifyOnServer(idToken);
+    window.location.href = data.redirect_url;
+  } catch (err) {
+    setMsg('Sign-in failed: ' + err.message, true);
+    btn.disabled = false;
+  }
+}
+
+async function bootstrap() {
+  try {
+    await liff.init({liffId: LIFF_ID});
+  } catch (err) {
+    setMsg('LIFF init failed: ' + err.message, true);
+    return;
+  }
+
+  if (liff.isLoggedIn()) {
+    // Already have a LINE session in this browser -> verify with backend right away
+    completeLogin();
+    return;
+  }
+
+  btn.disabled = false;
+  btn.addEventListener('click', () => {
+    // Redirects into LINE's login screen, then back to this same page with a session
+    liff.login({redirectUri: window.location.href});
+  });
+}
+
+bootstrap();
+</script>
+</body>
+</html>

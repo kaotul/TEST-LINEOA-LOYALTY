@@ -2,6 +2,7 @@
 Django 6.0 settings — Loyalty Program (LINE OA)
 Python 3.12+ required.
 """
+import os
 from pathlib import Path
 import environ
 
@@ -129,3 +130,73 @@ LIFF_BASE_URL = env("LIFF_BASE_URL", default="https://liff.line.me")
 BAHT_PER_POINT = env.int("BAHT_PER_POINT", default=50)   # ทุก 50 บาท = 1 แต้ม
 POINT_EXPIRY_DAYS = env.int("POINT_EXPIRY_DAYS", default=365)  # แต้มหมดอายุใน 1 ปี
 EXPIRY_WARNING_DAYS = env.int("EXPIRY_WARNING_DAYS", default=30)  # เตือนล่วงหน้า 30 วันก่อนหมดอายุ
+
+
+#----------------------------------------------------------------------------------------
+# LOGGER
+#----------------------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': u'%(name)-12s %(levelname)-8s %(message)s'
+        },        
+        'verbose': {
+            'format': u'{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': u'{levelname} {message}',
+            'style': '{',
+        },
+        'prod_format': {
+            'format': '[{asctime}] [{levelname}] [{name}:{lineno}] {message}',
+            'style': '{',
+        },                  
+    },
+    'filters': {
+        'special': {
+            #'()': 'project.logging.SpecialFilter',
+            'foo': 'bar',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'file': {
+            #'level': 'DEBUG',
+            #'class': 'logging.FileHandler',
+            #'filename': f'{BASE_DIR}/debug.log',
+            #'formatter': 'verbose',
+            #'encoding': 'UTF-8',
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, '', 'debug.log'),
+            'when': 'midnight',  # Rotate at midnight
+            'interval': 1,       # Every day
+            'backupCount': 7,    # Keep 7 days of logs
+            'formatter': 'verbose',          
+            'encoding': 'UTF-8',            
+        },        
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['special'],   
+        },
+    },
+    'loggers': {
+        'CORE': {
+            'handlers': ['console',],
+            'level': os.environ.get("DJANGO_LOG_LEVEL", "DEBUG"),
+            'propagate': True,
+        },
+    }
+}

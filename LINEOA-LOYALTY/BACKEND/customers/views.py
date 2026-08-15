@@ -14,7 +14,9 @@ from points.services import get_expiring_soon
 
 from .models import Customer
 from .serializers import CustomerSummarySerializer
+import logging
 
+logger = logging.getLogger('CORE')
 
 def _verify_liff_id_token(id_token: str) -> dict | None:
     """
@@ -22,13 +24,17 @@ def _verify_liff_id_token(id_token: str) -> dict | None:
     เพื่อยืนยันว่าเป็นผู้ใช้ LINE จริงก่อนสร้าง/คืนข้อมูลสมาชิก ป้องกันการปลอม userId จากฝั่ง client
     คืนค่า dict payload ของ token (มี sub=userId, name, picture ถ้า scope มี profile) หรือ None ถ้าไม่ผ่าน
     """
+    channel_id = getattr(settings, "LIFF_CHANNEL_ID", None)
+    logger.info(f"Verifying LIFF ID token with LINE: channel_id={channel_id}, id_token={id_token}")
+
     try:
         resp = requests.post(
             "https://api.line.me/oauth2/v2.1/verify",
-            data={"id_token": id_token, "client_id": settings.LIFF_CHANNEL_ID},
+            data={"id_token": id_token, "client_id": channel_id},
             timeout=5,
         )
         if resp.status_code != 200:
+            logger.warning(f"Failed to verify LIFF ID token: {resp.status_code}")
             return None
         return resp.json()
     except requests.RequestException:
@@ -56,6 +62,7 @@ def register_or_login(request):
     if not payload or not payload.get("sub"):
         return Response({"detail": "invalid id_token"}, status=401)
 
+    logger.info(f"LIFF ID token verified: sub={payload['sub']}, name={payload.get('name')}, picture={payload.get('picture')}")
     line_user_id = payload["sub"]
     customer, created = Customer.objects.get_or_create(
         line_user_id=line_user_id,
@@ -114,6 +121,8 @@ def my_points_summary(request):
     ต้องผ่านการลงทะเบียน (is_registered=True) แล้วเท่านั้น ไม่งั้นตอบ 428 ให้ front-end พาไปหน้าสมัครสมาชิกก่อน
     """
     id_token = request.query_params.get("id_token")
+    logger.info(f"Fetching points summary for LIFF ID token: {id_token}")
+
     if not id_token:
         return Response({"detail": "id_token is required"}, status=400)
 
@@ -121,8 +130,10 @@ def my_points_summary(request):
     if not payload or not payload.get("sub"):
         return Response({"detail": "invalid id_token"}, status=401)
 
+    logger.info(f'Customer ID token verified: sub={payload["sub"]}, name={payload.get("name")}, picture={payload.get("picture")}')
     customer = get_object_or_404(Customer, line_user_id=payload["sub"], is_active=True)
     if not customer.is_registered:
+        logger.warning(f"Customer {customer.id} is not registered yet")
         return Response({"detail": "customer not registered", "registered": False}, status=428)
 
     expiring = get_expiring_soon(customer)
@@ -138,6 +149,7 @@ def my_points_summary(request):
         "history": customer.transactions.all()[:50],
         "expiring_batches": expiring,
     }
+    logger.info(f"Returning points summary for customer {customer.id}: {data}")
     return Response(CustomerSummarySerializer(data).data)
 
 
